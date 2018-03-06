@@ -59,6 +59,7 @@ public final class PdfParseImages {
     private int MIN_H = 0;
     private Float AR = 0f;
     private boolean ARD = false;
+    private boolean VERBOSE = false;
 
     private final static boolean DIRECT_JPEG = false;
 
@@ -80,6 +81,8 @@ public final class PdfParseImages {
         // suppress the Dock icon on OS X
         System.setProperty("apple.awt.UIElement", "true");
 
+        Logger.getLogger("org.apache.pdfbox").setLevel(java.util.logging.Level.SEVERE);
+
         try {
             PdfParseImages parseImages = new PdfParseImages();
             parseImages.run(args);
@@ -98,6 +101,8 @@ public final class PdfParseImages {
             CmdHelper.printHelp();
             System.exit(0);
         }
+
+        VERBOSE = helper.isVerbose();
 
         MIN_W = helper.getMinWidth();
         MIN_W = helper.getMinHeight();
@@ -187,6 +192,9 @@ public final class PdfParseImages {
         try {
             File dummyFile = new File(folder, DUMMY_FILE_NAME);
             if (dummyFile.isFile()) {
+                if (VERBOSE) {
+                    System.out.println("Cleaning folder: " + folder.getPath());
+                }
                 FileUtils.deleteDirectory(folder);
             }
         } catch (Exception e) {
@@ -297,7 +305,9 @@ public final class PdfParseImages {
                 String name = semiName + "_" + imageCounter + "_" + pdImage.getWidth() + "x" + pdImage.getHeight();
                 imageCounter++;
 
-                System.out.println("Writing image: " + name);            
+                if (VERBOSE) {
+                    System.out.println("Writing image: " + name);            
+                }
                 write2file(pdImage, name, DIRECT_JPEG, outDir.getPath());
             }
         }

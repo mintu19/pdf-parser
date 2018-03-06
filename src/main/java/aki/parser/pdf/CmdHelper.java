@@ -37,6 +37,7 @@ class CmdHelper {
     }
 
     private void processArgs() throws ParseException {
+        System.out.println(args[0]);
         if (args.length < 2) {
             throw new ParseException("Invalid size of arguments: " + args.length);
         }
@@ -44,7 +45,7 @@ class CmdHelper {
         if (args[0].equals("init")) {
             commandFlags[0] = true;
             if ( ! (cmd.hasOption("s") || cmd.hasOption("i")) ) {
-                throw new ParseException("No directory to clean");
+                throw new ParseException("No directory to init");
             }
         } else if (args[0].equals("clean")) {
             commandFlags[1] = true;
@@ -68,6 +69,7 @@ class CmdHelper {
         Option aspectRatioDual = new Option("ard", false, "Max Aspect Ratio to maintain both width and height");
         Option outDir = new Option("d", "out-dir", true, "Change Output  Directory (Default is in place of file)");
         Option inDir = new Option("i", "in-dir", true, "Input  Directory");
+        Option verbose = new Option("v", "verbose", false, "Print to console");
         Option help = new Option("h", "help", false, "Aspect Ratio to maintain both ways");
 
         options.addOption(singleFileOption);
@@ -78,6 +80,7 @@ class CmdHelper {
         options.addOption(aspectRatioDual);
         options.addOption(outDir);
         options.addOption(inDir);
+        options.addOption(verbose);
         options.addOption(help);
     }
 
@@ -95,6 +98,10 @@ class CmdHelper {
 
     public boolean isClean() {
         return commandFlags[1];
+    }
+
+    public boolean isVerbose() {
+        return cmd.hasOption("v");
     }
 
     public boolean isHelp() {
@@ -171,6 +178,6 @@ class CmdHelper {
 
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("pdf-parser <init | clean | help> [options] <Dir Path>", header, options, footer, true);
+        formatter.printHelp("pdf-parser <init | clean | help> [options, arguments]", header, options, footer, true);
     }
 }

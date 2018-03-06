@@ -29,6 +29,9 @@ class OutLogHelper {
 
         trackWriter = new PrintWriter(trackFile);   // close at end
         csvWriter = new PrintWriter(csvFile);   // close at end
+
+
+        trackWriter.printf(FORMATTER + "\n", "Count", "Done?", "Folder", "Project", "Output Path");
     }
 
     public void close() {

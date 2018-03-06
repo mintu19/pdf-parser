@@ -1,0 +1,39 @@
+apply plugin: 'java'
+apply plugin: 'application'
+
+group = 'aki.parser.pdf'
+version = '0.0.2'
+description = """Gmr Pdf Parser"""
+mainClassName = 'aki.parser.pdf.PdfParseImages'
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile "org.apache.pdfbox:pdfbox:2.0.8"
+
+    compile group: 'commons-io', name: 'commons-io', version: '2.5'
+    compile group: 'commons-cli', name: 'commons-cli', version: '1.4'
+}
+
+jar {
+    // Keep jar clean:
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.MF'
+
+    manifest {
+        attributes 'Main-Class': 'aki.parser.pdf.PdfParseImages',
+                    'Class-Path': configurations.runtime.files.collect { "lib/$it.name" }.join(' ')
+    }  
+
+    from {
+        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.6'
+}

@@ -46,12 +46,14 @@ import aki.parser.pdf.IOUtils.ImageIOUtil;
 
 public final class PdfParseImages {
 
+    /*
     private final static Logger LOGGER = Logger.getLogger(PdfParseImages.class.getName());
     
     // Not used now
     private final static String IMAGE_FORMAT = "jpg";   // for writing
     private final static String EXTENTION = ".jpg";     // for named extention
     //
+    */
 
     private final static String DUMMY_FILE_NAME = "parser.aki";   // for writing
 
@@ -105,7 +107,7 @@ public final class PdfParseImages {
         VERBOSE = helper.isVerbose();
 
         MIN_W = helper.getMinWidth();
-        MIN_W = helper.getMinHeight();
+        MIN_H = helper.getMinHeight();
         AR = helper.getAspectRatio();
         ARD = helper.isARDual();
 
@@ -316,7 +318,7 @@ public final class PdfParseImages {
             boolean flag = (pdImage.getHeight() > MIN_H && pdImage.getWidth() > MIN_W);
             float ar = pdImage.getWidth() / pdImage.getHeight();
             // Info: logical & in bw
-            flag = flag && (AR != null ? (ar <= AR  || (ARD & ar <= (1/AR))) : true);
+            flag = flag && (AR != null ? (ar <= AR  || (ARD & (1/ar) <= AR)) : true);
             return flag;
         }
 
@@ -456,6 +458,10 @@ public final class PdfParseImages {
                         // for CMYK and other "unusual" colorspaces, the JPEG will be converted
                         ImageIOUtil.writeImage(image, suffix, out);
                     }
+                } else {
+                    InputStream data = pdImage.createInputStream();
+                    IOUtils.copy(data, out);
+                    IOUtils.closeQuietly(data);
                 }
             }
             out.flush();

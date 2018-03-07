@@ -152,9 +152,14 @@ class CmdHelper {
         }
     }
 
-    public Float getAspectRatio() {
+    public Float getAspectRatio() throws ParseException {
         try {
-            return Float.valueOf(cmd.getOptionValue("ar", "j"));
+            Float value = Float.valueOf(cmd.getOptionValue("ar", "j"));
+            if(value >= 1) {
+                return value;
+            } else {
+                 throw new ParseException("AR cannot be less than 1");
+            }
         } catch (NumberFormatException e) {
             return null;
         }

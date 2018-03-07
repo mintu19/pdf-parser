@@ -126,7 +126,9 @@ public final class PdfParseImages {
             processDirectory(helper.getDir(), outputDir);
         }
 
-        logHelper.close();
+        if (logHelper != null) {
+            logHelper.close();
+        }
     }
 
     private void processDirectory(File folder, File outputDir) throws IOException, ParseException, FileNotFoundException {
@@ -318,7 +320,7 @@ public final class PdfParseImages {
             boolean flag = (pdImage.getHeight() > MIN_H && pdImage.getWidth() > MIN_W);
             float ar = pdImage.getWidth() / pdImage.getHeight();
             // Info: logical & in bw
-            flag = flag && (AR != null ? ( (ar >= 0 && ar <= AR) || (ARD & ( (1/ar) >= 0 && (1/ar) <= AR)) ) : true);
+            flag = flag && ( (AR != null) ? ( (ar >= 1 && ar <= AR) || (ARD & ((1/ar) >= 1 && (1/ar) <= AR)) ) : true );
             return flag;
         }
 

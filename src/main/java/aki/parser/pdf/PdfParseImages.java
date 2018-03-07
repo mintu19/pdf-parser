@@ -246,13 +246,13 @@ public final class PdfParseImages {
         }
         try {
             try(PDDocument pdDocument = PDDocument.load(pdfFile)) {
-                String name = builderName + "_" + projectName + "_";
+                String semiName = builderName + "_" + projectName;
                 Iterator<PDPage> pageIter = pdDocument.getPages().iterator();
                 imageCounter = 1;
                 while(pageIter.hasNext()) {
                     PDPage page = pageIter.next();
                     // saveImagesFromResources(page.getResources(), outDir, name);
-                    ImageGraphicsEngine extractor = new ImageGraphicsEngine(page, outDir, name);
+                    ImageGraphicsEngine extractor = new ImageGraphicsEngine(page, outDir, semiName);
                     extractor.run();
                 }
             }
@@ -318,7 +318,7 @@ public final class PdfParseImages {
             boolean flag = (pdImage.getHeight() > MIN_H && pdImage.getWidth() > MIN_W);
             float ar = pdImage.getWidth() / pdImage.getHeight();
             // Info: logical & in bw
-            flag = flag && (AR != null ? (ar <= AR  || (ARD & (1/ar) <= AR)) : true);
+            flag = flag && (AR != null ? ( (ar >= 0 && ar <= AR) || (ARD & ( (1/ar) >= 0 && (1/ar) <= AR)) ) : true);
             return flag;
         }
 

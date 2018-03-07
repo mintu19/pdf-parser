@@ -2,7 +2,7 @@ apply plugin: 'java'
 apply plugin: 'application'
 
 group = 'aki.parser.pdf'
-version = '0.0.2'
+version = '0.0.3'
 description = """Pdf Parser"""
 mainClassName = 'aki.parser.pdf.PdfParseImages'
 

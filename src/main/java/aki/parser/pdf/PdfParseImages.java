@@ -1,6 +1,13 @@
 package aki.parser.pdf;
 
+import java.awt.AlphaComposite;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,6 +21,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+
+import javax.imageio.ImageIO;
 
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.io.FileUtils;
@@ -62,6 +71,8 @@ public final class PdfParseImages {
     private Float AR = 0f;
     private boolean ARD = false;
     private boolean VERBOSE = false;
+    private String WATERMARK_NAME = "";
+    private File WATERMARK_IMAGE_FILE = null;
 
     private final static boolean DIRECT_JPEG = false;
 
@@ -70,7 +81,6 @@ public final class PdfParseImages {
             COSName.DCT_DECODE_ABBREVIATION.getName());
 
     private final Set<COSStream> seen = new HashSet<>();
-    private int imageCounter = 1;
 
     private CmdHelper helper;
 
@@ -110,6 +120,8 @@ public final class PdfParseImages {
         MIN_H = helper.getMinHeight();
         AR = helper.getAspectRatio();
         ARD = helper.isARDual();
+        WATERMARK_NAME = helper.getTextWatermarkName();
+        WATERMARK_IMAGE_FILE = helper.getImageWatermarkName();
 
         File outputDir = helper.getOutDir();
 
@@ -250,12 +262,13 @@ public final class PdfParseImages {
             try(PDDocument pdDocument = PDDocument.load(pdfFile)) {
                 String semiName = builderName + "_" + projectName;
                 Iterator<PDPage> pageIter = pdDocument.getPages().iterator();
-                imageCounter = 1;
+                int pageNo = 1;
                 while(pageIter.hasNext()) {
                     PDPage page = pageIter.next();
                     // saveImagesFromResources(page.getResources(), outDir, name);
-                    ImageGraphicsEngine extractor = new ImageGraphicsEngine(page, outDir, semiName);
+                    ImageGraphicsEngine extractor = new ImageGraphicsEngine(page, outDir, semiName, pageNo);
                     extractor.run();
+                    pageNo++;
                 }
             }
         } catch(Exception e) {
@@ -267,11 +280,15 @@ public final class PdfParseImages {
     private class ImageGraphicsEngine extends PDFGraphicsStreamEngine {
         File outDir;
         String semiName;
+        int pageNo;
 
-        protected ImageGraphicsEngine(PDPage page, File outDir, String name) throws IOException {
+        int imageCounter = 1;
+
+        protected ImageGraphicsEngine(PDPage page, File outDir, String name, int pageNo) throws IOException {
             super(page);
             this.outDir = outDir;
             this.semiName = name;
+            this.pageNo = pageNo;
         }
 
         public void run() throws IOException {
@@ -306,7 +323,8 @@ public final class PdfParseImages {
 
             if (checkImage(pdImage)) {
                 // save image
-                String name = semiName + "_" + imageCounter + "_" + pdImage.getWidth() + "x" + pdImage.getHeight();
+                String name = semiName + "_" + imageCounter + "_" + this.pageNo + "_" 
+                        + pdImage.getWidth() + "x" + pdImage.getHeight();
                 imageCounter++;
 
                 if (VERBOSE) {
@@ -444,7 +462,10 @@ public final class PdfParseImages {
         String finalPath = path + File.separator + prefix + "." + suffix;
         try (FileOutputStream out = new FileOutputStream(finalPath)) {
 
-            BufferedImage image = pdImage.getImage();
+            int imageType = "png".equalsIgnoreCase(suffix) ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB;
+            BufferedImage image = WATERMARK_NAME != null ?
+                addTextWaterMark(pdImage.getImage(), imageType) : addImageWaterMark(pdImage.getImage(), imageType);
+            
             if (image != null) {
                 if ("jpg".equals(suffix)) {
                     String colorSpaceName = pdImage.getColorSpace().getName();
@@ -468,5 +489,69 @@ public final class PdfParseImages {
             }
             out.flush();
         }
+    }
+
+    private BufferedImage addTextWaterMark(BufferedImage image, int imageType) {
+
+        BufferedImage watermarked = new BufferedImage(image.getWidth(), image.getHeight(), imageType);
+        Graphics2D g2d = (Graphics2D) watermarked.getGraphics();
+        g2d.drawImage(image, 0, 0, null);
+    
+        // initializes necessary graphic properties
+        AlphaComposite alphaChannel = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f);
+        g2d.setComposite(alphaChannel);
+        g2d.setColor(Color.LIGHT_GRAY);
+        g2d.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 30));
+        FontMetrics fontMetrics = g2d.getFontMetrics();
+        Rectangle2D rect = fontMetrics.getStringBounds(WATERMARK_NAME, g2d);
+
+        // calculates the coordinate where the String is painted
+        int centerX = (image.getWidth() - (int) rect.getWidth()) / 2;
+        int centerY = (image.getHeight() - (int) rect.getHeight()) / 2;
+    
+        // paints the textual watermark
+        g2d.drawString(WATERMARK_NAME, centerX, centerY);
+    
+        g2d.dispose();
+        return watermarked;
+    }
+
+    private BufferedImage addImageWaterMark(BufferedImage image, int imageType) {
+
+        BufferedImage overlay;
+        try {
+            overlay = resize(ImageIO.read(WATERMARK_IMAGE_FILE), 150, 150);
+        } catch(IOException e) {
+            System.out.println(e.getMessage());
+            return null;
+        }
+
+        BufferedImage watermarked = new BufferedImage(image.getWidth(), image.getHeight(), imageType);
+        
+        Graphics2D g2d = (Graphics2D) watermarked.getGraphics();
+        g2d.drawImage(image, 0, 0, null);
+    
+        // initializes necessary graphic properties
+        AlphaComposite alphaChannel = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.4f);
+        g2d.setComposite(alphaChannel);
+
+        // calculates the coordinate where the String is painted
+        int centerX = (image.getWidth() - overlay.getWidth()) / 2;
+        int centerY = (image.getHeight() - overlay.getHeight()) / 2;
+    
+        // paints the image watermark
+        g2d.drawImage(overlay, centerX, centerY, null);
+
+        g2d.dispose();
+        return watermarked;
+    }
+
+    private static BufferedImage resize(BufferedImage img, int height, int width) {
+        Image tmp = img.getScaledInstance(width, height, Image.SCALE_SMOOTH);
+        BufferedImage resized = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2d = resized.createGraphics();
+        g2d.drawImage(tmp, 0, 0, null);
+        g2d.dispose();
+        return resized;
     }
 }

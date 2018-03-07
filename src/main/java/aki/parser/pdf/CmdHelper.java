@@ -69,6 +69,8 @@ class CmdHelper {
         Option aspectRatioDual = new Option("ard", false, "Max Aspect Ratio to maintain both width and height");
         Option outDir = new Option("d", "out-dir", true, "Change Output  Directory (Default is in place of file)");
         Option inDir = new Option("i", "in-dir", true, "Input  Directory");
+        Option txtMark = new Option("twm", "text-watermark", true, "Text Watermark Name");
+        Option imgMark = new Option("iwm", "image-watermark", true, "Image Watermark file location");
         Option verbose = new Option("v", "verbose", false, "Print to console");
         Option help = new Option("h", "help", false, "Aspect Ratio to maintain both ways");
 
@@ -80,6 +82,8 @@ class CmdHelper {
         options.addOption(aspectRatioDual);
         options.addOption(outDir);
         options.addOption(inDir);
+        options.addOption(txtMark);
+        options.addOption(imgMark);
         options.addOption(verbose);
         options.addOption(help);
     }
@@ -181,8 +185,33 @@ class CmdHelper {
         return null;
     }
 
+    public String getTextWatermarkName() throws ParseException {
+        if (cmd.hasOption("twm")) {
+            if (cmd.hasOption("iwm")) {
+                throw new ParseException("Cannot have both Text and Image Watermarks...");
+            }
+            return cmd.getOptionValue("twm");
+        }
+        return null;
+    }
+
+    public File getImageWatermarkName() throws ParseException {
+        if (cmd.hasOption("iwm")) {
+            if (cmd.hasOption("twm")) {
+                throw new ParseException("Cannot have both Text and Image Watermarks...");
+            }
+            File file = new File(cmd.getOptionValue("iwm"));
+            if (file.exists() && file.isFile()) {
+                return file;
+            } else {
+                throw new ParseException("Watermark File not found!!!");
+            }
+        }
+        return null;
+    }
+
     public static void printHelp() {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp("pdf-parser <init | clean | help> [options, arguments]", header, options, footer, true);
+        formatter.printHelp("pdf-parser <init | clean | help> ", header, options, footer, true);
     }
 }
